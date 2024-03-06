@@ -12,7 +12,7 @@ def generate_pet_name(animal_type, pet_color):
         input_variables= ['animal_type', 'pet_color'],
         template = "I have a {animal_type} and I want it's name. It is {pet_color} and I want it to be cool. Tell me what color, and what animal i inform you"
     )
-    name_chain = LLMChain(llm=llm, prompt=prompt_template_name)
+    name_chain = LLMChain(llm=llm, prompt=prompt_template_name, output_key= "pet_name")
 
     response= name_chain({
         'animal_type': animal_type
