@@ -1,40 +1,34 @@
-from langchain_openai import OpenAI
+from langchain_community.document_loaders import YoutubeLoader
+from langchain.text_splitter import RecursiveCharacterTextSplitter
+from langchain_community.llms import openai
 from langchain.prompts import PromptTemplate
 from langchain.chains import LLMChain
+from langchain_community.vectorstores import FAISS
+from langchain_openai import OpenAIEmbeddings
 from dotenv import load_dotenv
-from langchain.agents import load_tools
-from langchain.agents import initialize_agent
-from langchain.agents import AgentType
 
 load_dotenv()
 
-def generate_pet_name(animal_type, pet_color):
-    llm = OpenAI(temperature=0.7)
+embeddings = OpenAIEmbeddings()
 
-    prompt_template_name = PromptTemplate(
-        input_variables= ['animal_type', 'pet_color'],
-        template = "I have a {animal_type} and I want it's name. It is {pet_color} and I want it to be cool. Tell me what color, and what animal i inform you"
+# video_url = "https://www.youtube.com/watch?v=lG7Uxts9SXs&t=1241s&ab_channel=freeCodeCamp.org"
+video_url ="https://www.youtube.com/watch?v=pRGtPd89MRA"
+
+def create_vector_db_from_youtube_url( video_url: str ) -> FAISS:
+    loader = YoutubeLoader.from_youtube_url(video_url, language="zh-Hans")
+    transcript = loader.load()
+
+    text_splitter = RecursiveCharacterTextSplitter(
+        chunk_size=1000,
+        chunk_overlap=200,
     )
-    name_chain = LLMChain(llm=llm, prompt=prompt_template_name, output_key= "pet_name")
 
-    response= name_chain({
-        'animal_type': animal_type
-        , 'pet_color': pet_color
-    })
-    return response
+    docs = text_splitter.split_documents(transcript)
 
-def langchain_agent():
-    llm = OpenAI(temperature=0.7)
-    tools = load_tools(["llm-math","wikipedia"], llm=llm)
-    agent = initialize_agent(tools, llm, agent=AgentType.ZERO_SHOT_REACT_DESCRIPTION, verbose=True)
-    
-    result =agent.run(
-        "What is the average age of a dog? Multiply the age by 3. "
-        )
+    db = FAISS.from_documents(docs, embeddings)
 
-    print(result)
+    return docs
 
-if __name__ == "__main__":
-    langchain_agent()
-    # print(generate_pet_name("cow", "red"))
-    
+print(create_vector_db_from_youtube_url(video_url))
+
+
